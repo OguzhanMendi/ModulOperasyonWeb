@@ -23,17 +23,19 @@ export default function Mainpage({ toggleSidebar }) {
   };
 
   return (
-    <div className="box-border w-full flex h-screen ">
+    <div className="box-border w-full flex h-screen   ">
       <div
-        className={`${
+        className={`
+       
+        ${
           isHovered
-            ? "w-60 bg-lime-500	 duration-100 "
-            : "w-16 bg-lime-500	sduration-150 "
-        } flex-row  rounded-sm  `}
+            ? "w-60 bg-lime-500	 duration-100  "
+            : "w-16 bg-lime-500	sduration-150  "
+        } flex-row  rounded-sm   `}
         onMouseEnter={toggleAc}
         onMouseLeave={toggleKapat}
       >
-        <div className="flex flex-col ">
+        <div className="flex flex-col  ">
           <ul className="flex flex-col gap-2 p-2 ">
             <li
               className="flex items-center gap-2 p-2 cursor-pointer  hover:bg-sky-400 rounded-xl"
