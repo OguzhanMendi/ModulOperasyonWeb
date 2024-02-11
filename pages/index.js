@@ -34,7 +34,7 @@ export default function Home() {
           <CircularProgress />
         </div>
       ) : (
-        <div>
+        <div className="box-content	">
           <Headers toggleSidebar={toggleSidebar} user={user} />
           <Divider />
           <Mainpage toggleSidebar={isSidebarOpen} />

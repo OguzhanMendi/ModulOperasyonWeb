@@ -9,21 +9,27 @@ import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
 import Cookie from "js-cookie";
-
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
-
 import Snackbar from "@mui/material/Snackbar";
-
 import CloseIcon from "@mui/icons-material/Close";
 import Alert from "@mui/material/Alert";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { useSelector, useDispatch } from "react-redux";
+import { useRef } from "react";
 
 export default function UzakBaglanti() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPageCount, setTotalPageCount] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  const contentPing = useSelector((state) => state.contentPing.renew);
   const [filtre, setFiltre] = useState("");
   const [data, setData] = useState([]);
-
+  const dispatch = useDispatch();
+  const refElm = useRef(null);
   const [form, setForm] = useState([
     {
       sirketAd: "",
@@ -47,7 +53,6 @@ export default function UzakBaglanti() {
   ]);
 
   const [updateOpen, setUpdateOpen] = useState(false);
-
   const updateDialogOpen = () => {
     setUpdateOpen(true);
   };
@@ -77,7 +82,7 @@ export default function UzakBaglanti() {
   const listService = async () => {
     try {
       const response = await axios.post(
-        "https://localhost:7031/Baglanti/List",
+        `https://localhost:7031/Baglanti/List?page=${1}`,
         "",
         {
           headers: {
@@ -86,13 +91,51 @@ export default function UzakBaglanti() {
         }
       );
       if (response.status === 200) {
-        setData(response.data);
+        setData((prevData) => [...prevData, ...response?.data?.data]);
+        setCurrentPage((prevPage) => prevPage + 1);
+        setHasMore(currentPage < totalPageCount);
       }
-    } catch (err) {}
+    } catch (err) {
+      setHasMore(false);
+    }
   };
+
   useEffect(() => {
     listService();
   }, []);
+
+  // useEffect(() => {
+  //   const getListService = async () => {
+  //     try {
+  //       const response = await axios.post(
+  //         `https://localhost:7031/Baglanti/List?page=${currentPage}`,
+
+  //         {
+  //           headers: {
+  //             authorization: `Bearer ${Cookie.get("token")}`,
+  //           },
+  //         }
+  //       );
+
+  //       if (response.status === 200) {
+  //         setData(response.data.data);
+  //         setTotalPageCount(response.data.totalPages);
+  //         dispatch({
+  //           type: "REFETCH_CONTENT",
+  //           payload: false,
+  //         });
+  //       }
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   };
+
+  //   debugger;
+
+  //   if (contentPing) {
+  //     getListService();
+  //   }
+  // });
 
   const createService = async () => {
     try {
@@ -212,7 +255,7 @@ export default function UzakBaglanti() {
   };
 
   return (
-    <>
+    <div>
       <div className="border-box w-full flex flex-col h-full">
         <div className="flex justify-between gap-10  p-3 items-center ">
           <Button
@@ -455,100 +498,114 @@ export default function UzakBaglanti() {
         </div>
 
         <div className="  md:w-full overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200  ">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">
-                  Şirket Ad
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  Bağlantı Tipi
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  Bağlantı ID
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  Bağlantı Şifre
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  Yetkili Ad
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  Yetkili Tel
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  İşlemler
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filtreleData(data, filtre).map((row) => (
-                <tr key={row?.id}>
-                  <td className=" px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                    {row?.sirketAd}
-                  </td>
-                  <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                    {row?.baglantiAd}
-                  </td>
-                  <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                    {uzakFormat(row?.baglantiId)}
-                  </td>
-                  <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                    {row?.baglantiSifre}
-                  </td>
-                  <td className="px-2 py-2 md:px-6  md:py-4  whitespace-nowrap">
-                    {row?.yetkiliAd}
-                  </td>
-                  <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                    {row?.yetkiliTel.replace(
-                      /(\d{4})(\d{3})(\d{2})(\d{2})/,
-                      "$1 $2 $3 $4"
-                    )}
-                  </td>
-                  <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                    <div className="flex  gap-1">
-                      <IconButton color="primary">
-                        <EditIcon
-                          onClick={() => {
-                            getBaglantiByIdService(row?.id);
-                          }}
-                        />
-                      </IconButton>
-
-                      <IconButton color="error">
-                        <DeleteIcon
-                          onClick={() => {
-                            deleteService(row?.id);
-                          }}
-                        />
-                      </IconButton>
-
-                      <Snackbar
-                        open={snackOpen}
-                        autoHideDuration={3000}
-                        onClose={snackCloseClick}
-                        anchorOrigin={{
-                          vertical: "bottom",
-                          horizontal: "right",
-                        }}
-                      >
-                        <Alert
-                          onClose={snackCloseClick}
-                          severity={alertSeverity}
-                          variant="filled"
-                          sx={{ width: "100%" }}
-                        >
-                          {alertMessage}
-                        </Alert>
-                      </Snackbar>
-                    </div>
-                  </td>
+          <InfiniteScroll
+            dataLength={data.length}
+            next={() => listService()}
+            hasMore={hasMore}
+            loader={
+              hasMore && (
+                <div className="flex justify-center items-center">
+                  <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gray-900"></div>
+                </div>
+              )
+            }
+          >
+            <table className="min-w-full divide-y divide-gray-200  ">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">
+                    Şirket Ad
+                  </th>
+                  <th className="px-2 py-1 md:px-6 md:py-3text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
+                    Bağlantı Tipi
+                  </th>
+                  <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
+                    Bağlantı ID
+                  </th>
+                  <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
+                    Bağlantı Şifre
+                  </th>
+                  <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
+                    Yetkili Ad
+                  </th>
+                  <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
+                    Yetkili Tel
+                  </th>
+                  <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
+                    İşlemler
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filtreleData(data, filtre).map((row) => (
+                  <tr key={row?.id}>
+                    <td className=" px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
+                      {row?.sirketAd}
+                    </td>
+                    <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
+                      {row?.baglantiAd}
+                    </td>
+                    <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
+                      {uzakFormat(row?.baglantiId)}
+                    </td>
+                    <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
+                      {row?.baglantiSifre}
+                    </td>
+                    <td className="px-2 py-2 md:px-6  md:py-4  whitespace-nowrap">
+                      {row?.yetkiliAd}
+                    </td>
+                    <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
+                      {row?.yetkiliTel.replace(
+                        /(\d{4})(\d{3})(\d{2})(\d{2})/,
+                        "$1 $2 $3 $4"
+                      )}
+                    </td>
+                    <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
+                      <div className="flex  gap-1">
+                        <IconButton color="primary">
+                          <EditIcon
+                            onClick={() => {
+                              getBaglantiByIdService(row?.id);
+                            }}
+                          />
+                        </IconButton>
+
+                        <IconButton color="error">
+                          <DeleteIcon
+                            onClick={() => {
+                              deleteService(row?.id);
+                            }}
+                          />
+                        </IconButton>
+
+                        <Snackbar
+                          open={snackOpen}
+                          autoHideDuration={3000}
+                          onClose={snackCloseClick}
+                          anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "right",
+                          }}
+                        >
+                          <Alert
+                            onClose={snackCloseClick}
+                            severity={alertSeverity}
+                            variant="filled"
+                            sx={{ width: "100%" }}
+                          >
+                            {alertMessage}
+                          </Alert>
+                        </Snackbar>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </InfiniteScroll>
         </div>
       </div>
-    </>
+    </div>
   );
 }
