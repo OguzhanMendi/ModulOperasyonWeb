@@ -29,8 +29,8 @@ export default function Mainpage({ toggleSidebar }) {
        
         ${
           isHovered
-            ? "w-60 bg-lime-500	 duration-100  "
-            : "w-16 bg-lime-500	sduration-150  "
+            ? "w-60 bg-blue-800 duration-100  "
+            : "w-16 bg-blue-800	sduration-150  "
         } flex-row  rounded-sm   `}
         onMouseEnter={toggleAc}
         onMouseLeave={toggleKapat}
