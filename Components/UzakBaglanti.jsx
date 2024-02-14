@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useRef } from "react";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import { IoCreateOutline } from "react-icons/io5";
@@ -14,21 +14,21 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Snackbar from "@mui/material/Snackbar";
-import CloseIcon from "@mui/icons-material/Close";
+
 import Alert from "@mui/material/Alert";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useSelector, useDispatch } from "react-redux";
-import { useRef } from "react";
+import { list } from "postcss";
 
 export default function UzakBaglanti() {
+  const [data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPageCount, setTotalPageCount] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-
   const contentPing = useSelector((state) => state.contentPing.renew);
   const [filtre, setFiltre] = useState("");
-  const [data, setData] = useState([]);
   const dispatch = useDispatch();
+
   const refElm = useRef(null);
   const [form, setForm] = useState([
     {
@@ -40,7 +40,6 @@ export default function UzakBaglanti() {
       yetkiliTel: "",
     },
   ]);
-
   const [updateform, setUpdateForm] = useState([
     {
       sirketAd: "",
@@ -51,12 +50,10 @@ export default function UzakBaglanti() {
       yetkiliTel: "",
     },
   ]);
-
   const [updateOpen, setUpdateOpen] = useState(false);
   const updateDialogOpen = () => {
     setUpdateOpen(true);
   };
-
   const updateDialogClose = () => {
     setUpdateOpen(false);
   };
@@ -98,6 +95,35 @@ export default function UzakBaglanti() {
       setHasMore(false);
     }
   };
+  const getList = async () => {
+    try {
+      const response = await axios.get(
+        `https://localhost:7031/Baglanti/List?page=${currentPage}`,
+        {
+          headers: {
+            Authorization: `Bearer ${Cookie.get("token")}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        setData(response?.data?.data);
+        setTotalPageCount(response?.data?.totalPages);
+        dispatch({
+          type: "REFETCH_CONTENT",
+          payload: false,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    getList();
+    if (contentPing) {
+      getList();
+    }
+  }, [contentPing]);
 
   const createService = async () => {
     try {
@@ -123,9 +149,9 @@ export default function UzakBaglanti() {
       );
 
       if (response.status === 200) {
-        listService();
         dialogClose();
         setForm("");
+        await getList();
       }
     } catch (err) {}
   };
@@ -180,17 +206,7 @@ export default function UzakBaglanti() {
   const [alertSeverity, setAlertSeverity] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const deleteService = async (id) => {
-    debugger;
     try {
-      const reqBody = JSON.stringify({
-        id: data.id,
-        sirketAd: "",
-        baglantiAd: "",
-        baglantiId: "",
-        baglantiSifre: "",
-        yetkiliAd: "",
-      });
-
       const response = await axios.delete(
         `https://localhost:7031/Baglanti/Delete?id=${id}`,
 
@@ -201,9 +217,12 @@ export default function UzakBaglanti() {
         }
       );
       if (response.status === 200) {
-        await listService();
+        debugger;
+
         setAlertSeverity("success");
         setAlertMessage("Silme işlemi başarıyla gerçekleştirildi.");
+        setCurrentPage(1);
+        getList();
       } else {
         setAlertSeverity("error");
         setAlertMessage("Silme işlemi başarısız oldu.");
@@ -216,388 +235,407 @@ export default function UzakBaglanti() {
     setSnackOpen(true);
   };
 
-  useEffect(() => {
-    debugger;
-    const getListService = async () => {
-      try {
-        const response = await axios.get(
-          `https://localhost:7031/Baglanti/List?page=${currentPage}`,
-
-          {
-            headers: {
-              authorization: `Bearer ${Cookie.get("token")}`,
-            },
-          }
-        );
-
-        if (response.status === 200) {
-          setData(response?.data?.data);
-          setTotalPageCount(response?.data?.totalPages);
-          dispatch({
-            type: "REFETCH_CONTENT",
-            payload: false,
-          });
+  const updateService = async (id) => {
+    const reqBody = JSON.stringify({
+      id: updateform.id,
+      sirketAd: updateform.sirketAd,
+      baglantiAd: updateform.baglantiAd,
+      baglantiId: updateform.baglantiId,
+      baglantiSifre: updateform.baglantiSifre,
+      yetkiliAd: updateform.yetkiliAd,
+      yetkiliTel: updateform.yetkiliTel,
+    });
+    try {
+      const response = await axios.put(
+        `https://localhost:7031/Baglanti/${id}`,
+        {
+          id: updateform.id,
+          sirketAd: updateform.sirketAd,
+          baglantiAd: updateform.baglantiAd,
+          baglantiId: updateform.baglantiId,
+          baglantiSifre: updateform.baglantiSifre,
+          yetkiliAd: updateform.yetkiliAd,
+          yetkiliTel: updateform.yetkiliTel,
+        },
+        {
+          headers: {
+            authorization: `Bearer ${Cookie.get("token")}`,
+          },
         }
-      } catch (error) {
-        console.log(error);
+      );
+      if (response.status === 200) {
+        setAlertSeverity("success");
+        setAlertMessage("Başarıyla Güncellendi.");
+        setCurrentPage(1);
+        setTotalPageCount(1);
+        getList();
+      } else {
+        setAlertSeverity("error");
+        setAlertMessage("Güncelleme işlemi başarısız oldu.");
       }
-    };
-    if (contentPing) {
-      getListService;
-    }
-  }, [contentPing]);
+      setSnackOpen(true);
+    } catch (err) {}
+  };
 
   return (
-    <div className="border-box w-full flex flex-col h-full">
-      <div className="flex justify-between gap-10  p-3 items-center ">
-        <Button
-          variant="contained"
-          className="bg-slate-600 "
-          size="large"
-          startIcon={<IoCreateOutline />}
-          sx={{
-            "&:hover": {
-              backgroundColor: "#778899",
-            },
+    <>
+      <div ref={refElm} className="border-box w-full flex flex-col h-full">
+        <InfiniteScroll
+          dataLength={data?.length}
+          next={() => {
+            listService();
           }}
-          onClick={dialogOpen}
+          hasMore={hasMore}
+          loader={
+            hasMore && (
+              <div className="flex justify-center items-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+              </div>
+            )
+          }
         >
-          <span>Ekle</span>
-        </Button>
-        <Dialog open={open} onClose={dialogClose} fullWidth>
-          <DialogTitle
-            className="text-center"
-            style={{ background: "#2196f3", color: "#fff" }}
-          >
-            Uzak Bağlantı Oluşturma
-          </DialogTitle>
-
-          <DialogContent style={{ background: "#f0f0f0" }}>
-            <div className="flex flex-col gap-3 p-3">
-              <TextField
-                label="Şirket Adı"
-                variant="outlined"
-                size="small"
-                fullWidth
-                value={form.sirketAd}
-                onChange={(e) => {
-                  setForm({ ...form, sirketAd: e.target.value });
-                }}
-              />
-              <TextField
-                label="Bağlantı Adı"
-                variant="outlined"
-                size="small"
-                fullWidth
-                value={form.baglantiAd}
-                onChange={(e) => {
-                  setForm({ ...form, baglantiAd: e.target.value });
-                }}
-              />
-              <div className="flex justify-between gap-3">
-                <TextField
-                  label="Bağlantı ID"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={form.baglantiId}
-                  onChange={(e) => {
-                    setForm({ ...form, baglantiId: e.target.value });
-                  }}
-                />
-                <TextField
-                  label="Bağlantı Şifre"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={form.baglantiSifre}
-                  onChange={(e) => {
-                    setForm({ ...form, baglantiSifre: e.target.value });
-                  }}
-                />
-              </div>
-              <div className="flex justify-between gap-3">
-                <TextField
-                  label="Yetkili Adı"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={form.yetkiliAd}
-                  onChange={(e) => {
-                    setForm({ ...form, yetkiliAd: e.target.value });
-                  }}
-                />
-                <TextField
-                  label="Yetkili Telefon"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={form.yetkiliTel}
-                  onChange={(e) => {
-                    setForm({ ...form, yetkiliTel: e.target.value });
-                  }}
-                />
-              </div>
-            </div>
-          </DialogContent>
-          <DialogActions style={{ background: "#f0f0f0" }}>
-            <Button variant="outlined" color="error" onClick={dialogClose}>
-              Kapat
-            </Button>
+          <div className="flex justify-between gap-10  p-3 items-center ">
             <Button
               variant="contained"
-              style={{ background: "#4caf50", color: "#fff" }}
-              onClick={() => {
-                createService();
+              className="bg-slate-600 "
+              size="large"
+              startIcon={<IoCreateOutline />}
+              sx={{
+                "&:hover": {
+                  backgroundColor: "#778899",
+                },
               }}
+              onClick={dialogOpen}
             >
-              Oluştur
+              <span>Ekle</span>
             </Button>
-          </DialogActions>
-        </Dialog>
+            <Dialog open={open} onClose={dialogClose} fullWidth>
+              <DialogTitle
+                className="text-center"
+                style={{ background: "#2196f3", color: "#fff" }}
+              >
+                Uzak Bağlantı Oluşturma
+              </DialogTitle>
 
-        <Dialog open={updateOpen} onClose={updateDialogClose} fullWidth>
-          <DialogTitle
-            className="text-center"
-            style={{ background: "#000080", color: "#fff" }}
-          >
-            Uzak Bağlantı Güncelle
-          </DialogTitle>
+              <DialogContent style={{ background: "#f0f0f0" }}>
+                <div className="flex flex-col gap-3 p-3">
+                  <TextField
+                    label="Şirket Adı"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={form.sirketAd}
+                    onChange={(e) => {
+                      setForm({ ...form, sirketAd: e.target.value });
+                    }}
+                  />
+                  <TextField
+                    label="Bağlantı Adı"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={form.baglantiAd}
+                    onChange={(e) => {
+                      setForm({ ...form, baglantiAd: e.target.value });
+                    }}
+                  />
+                  <div className="flex justify-between gap-3">
+                    <TextField
+                      label="Bağlantı ID"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      value={form.baglantiId}
+                      onChange={(e) => {
+                        setForm({ ...form, baglantiId: e.target.value });
+                      }}
+                    />
+                    <TextField
+                      label="Bağlantı Şifre"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      value={form.baglantiSifre}
+                      onChange={(e) => {
+                        setForm({ ...form, baglantiSifre: e.target.value });
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <TextField
+                      label="Yetkili Adı"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      value={form.yetkiliAd}
+                      onChange={(e) => {
+                        setForm({ ...form, yetkiliAd: e.target.value });
+                      }}
+                    />
+                    <TextField
+                      label="Yetkili Telefon"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      value={form.yetkiliTel}
+                      onChange={(e) => {
+                        setForm({ ...form, yetkiliTel: e.target.value });
+                      }}
+                    />
+                  </div>
+                </div>
+              </DialogContent>
+              <DialogActions style={{ background: "#f0f0f0" }}>
+                <Button variant="outlined" color="error" onClick={dialogClose}>
+                  Kapat
+                </Button>
+                <Button
+                  variant="contained"
+                  style={{ background: "#4caf50", color: "#fff" }}
+                  onClick={() => {
+                    createService();
+                  }}
+                >
+                  Oluştur
+                </Button>
+              </DialogActions>
+            </Dialog>
 
-          <DialogContent style={{ background: "#f0f0f0" }}>
-            <div className="flex flex-col gap-3 p-3">
-              <TextField
-                label="Şirket Adı"
-                variant="outlined"
-                size="small"
-                fullWidth
-                value={updateform.sirketAd}
-                onChange={(e) => {
-                  setUpdateForm({
-                    ...updateform,
-                    sirketAd: e.target.value,
-                  });
-                }}
-              />
-              <TextField
-                label="Bağlantı Adı"
-                variant="outlined"
-                size="small"
-                fullWidth
-                value={updateform.baglantiAd}
-                onChange={(e) => {
-                  setUpdateForm({
-                    ...updateform,
-                    baglantiAd: e.target.value,
-                  });
-                }}
-              />
-              <div className="flex justify-between gap-3">
-                <TextField
-                  label="Bağlantı ID"
+            <Dialog open={updateOpen} onClose={updateDialogClose} fullWidth>
+              <DialogTitle
+                className="text-center"
+                style={{ background: "#000080", color: "#fff" }}
+              >
+                Uzak Bağlantı Güncelle
+              </DialogTitle>
+
+              <DialogContent style={{ background: "#f0f0f0" }}>
+                <div className="flex flex-col gap-3 p-3">
+                  <TextField
+                    label="Şirket Adı"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={updateform.sirketAd}
+                    onChange={(e) => {
+                      setUpdateForm({
+                        ...updateform,
+                        sirketAd: e.target.value,
+                      });
+                    }}
+                  />
+                  <TextField
+                    label="Bağlantı Adı"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={updateform.baglantiAd}
+                    onChange={(e) => {
+                      setUpdateForm({
+                        ...updateform,
+                        baglantiAd: e.target.value,
+                      });
+                    }}
+                  />
+                  <div className="flex justify-between gap-3">
+                    <TextField
+                      label="Bağlantı ID"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      value={updateform.baglantiId}
+                      onChange={(e) => {
+                        setUpdateForm({
+                          ...updateform,
+                          baglantiId: e.target.value,
+                        });
+                      }}
+                    />
+                    <TextField
+                      label="Bağlantı Şifre"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      value={updateform.baglantiSifre}
+                      onChange={(e) => {
+                        setUpdateForm({
+                          ...updateform,
+                          baglantiSifre: e.target.value,
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <TextField
+                      label="Yetkili Adı"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      value={updateform.yetkiliAd}
+                      onChange={(e) => {
+                        setUpdateForm({
+                          ...updateform,
+                          yetkiliAd: e.target.value,
+                        });
+                      }}
+                    />
+                    <TextField
+                      label="Yetkili Telefon"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      value={updateform.yetkiliTel}
+                      onChange={(e) => {
+                        setUpdateForm({
+                          ...updateform,
+                          yetkiliTel: e.target.value,
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
+              </DialogContent>
+              <DialogActions style={{ background: "#f0f0f0" }}>
+                <Button
                   variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={updateform.baglantiId}
-                  onChange={(e) => {
-                    setUpdateForm({
-                      ...updateform,
-                      baglantiId: e.target.value,
-                    });
+                  color="error"
+                  onClick={updateDialogClose}
+                >
+                  Kapat
+                </Button>
+                <Button
+                  variant="contained"
+                  style={{ background: "#4caf50", color: "#fff" }}
+                  onClick={() => {
+                    updateService(updateform.id);
+                    updateDialogClose();
                   }}
-                />
-                <TextField
-                  label="Bağlantı Şifre"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={updateform.baglantiSifre}
-                  onChange={(e) => {
-                    setUpdateForm({
-                      ...updateform,
-                      baglantiSifre: e.target.value,
-                    });
-                  }}
-                />
-              </div>
-              <div className="flex justify-between gap-3">
-                <TextField
-                  label="Yetkili Adı"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={updateform.yetkiliAd}
-                  onChange={(e) => {
-                    setUpdateForm({
-                      ...updateform,
-                      yetkiliAd: e.target.value,
-                    });
-                  }}
-                />
-                <TextField
-                  label="Yetkili Telefon"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={updateform.yetkiliTel}
-                  onChange={(e) => {
-                    setUpdateForm({
-                      ...updateform,
-                      yetkiliTel: e.target.value,
-                    });
-                  }}
-                />
-              </div>
-            </div>
-          </DialogContent>
-          <DialogActions style={{ background: "#f0f0f0" }}>
-            <Button
+                >
+                  Güncelle
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            <TextField
+              id="outlined-basic"
+              size="small"
+              placeholder="Ara"
+              sx={{
+                width: "15%",
+              }}
+              color="secondary"
               variant="outlined"
-              color="error"
-              onClick={updateDialogClose}
-            >
-              Kapat
-            </Button>
-            <Button
-              variant="contained"
-              style={{ background: "#4caf50", color: "#fff" }}
-              onClick={() => {}}
-            >
-              Oluştur
-            </Button>
-          </DialogActions>
-        </Dialog>
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+              value={filtre}
+              onChange={handleFiltreChange}
+            />
+          </div>
 
-        <TextField
-          id="outlined-basic"
-          size="small"
-          placeholder="Ara"
-          sx={{
-            width: "15%",
-          }}
-          color="secondary"
-          variant="outlined"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          value={filtre}
-          onChange={handleFiltreChange}
-        />
-      </div>
-      <InfiniteScroll
-        dataLength={data?.length}
-        next={listService}
-        hasMore={hasMore}
-        loader={
-          hasMore && (
-            <div className="flex justify-center items-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-900"></div>
-            </div>
-          )
-        }
-      >
-        <div className="  md:w-full overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200  ">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">
-                  Şirket Ad
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  Bağlantı Tipi
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  Bağlantı ID
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  Bağlantı Şifre
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  Yetkili Ad
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  Yetkili Tel
-                </th>
-                <th className="px-2 py-1 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-auto">
-                  İşlemler
-                </th>
-              </tr>
-            </thead>
+          <div className="md:w-full overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-sky-600 text-white">
+                <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                    Şirket Ad
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                    Bağlantı Tipi
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                    Bağlantı ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                    Bağlantı Şifre
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                    Yetkili Ad
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                    Yetkili Tel
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                    İşlemler
+                  </th>
+                </tr>
+              </thead>
 
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filtreleData(data, filtre).map((row) => {
-                return (
-                  <tr key={row?.id}>
-                    <td className=" px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                      {row?.sirketAd}
-                    </td>
-                    <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                      {row?.baglantiAd}
-                    </td>
-                    <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                      {uzakFormat(row?.baglantiId)}
-                    </td>
-                    <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                      {row?.baglantiSifre}
-                    </td>
-                    <td className="px-2 py-2 md:px-6  md:py-4  whitespace-nowrap">
-                      {row?.yetkiliAd}
-                    </td>
-                    <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                      {row?.yetkiliTel.replace(
-                        /(\d{4})(\d{3})(\d{2})(\d{2})/,
-                        "$1 $2 $3 $4"
-                      )}
-                    </td>
-                    <td className="px-2 py-2 md:px-6  md:py-4 whitespace-nowrap">
-                      <div className="flex  gap-1">
-                        <IconButton color="primary">
-                          <EditIcon
-                            onClick={() => {
-                              getBaglantiByIdService(row?.id);
-                            }}
-                          />
-                        </IconButton>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filtreleData(data, filtre).map((row) => {
+                  return (
+                    <tr key={row?.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {row?.sirketAd}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {row?.baglantiAd}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {uzakFormat(row?.baglantiId)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {row?.baglantiSifre}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {row?.yetkiliAd}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {row?.yetkiliTel.replace(
+                          /(\d{4})(\d{3})(\d{2})(\d{2})/,
+                          "$1 $2 $3 $4"
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex items-center gap-2">
+                          <IconButton color="primary" size="small">
+                            <EditIcon
+                              onClick={() => {
+                                getBaglantiByIdService(row?.id);
+                              }}
+                            />
+                          </IconButton>
 
-                        <IconButton color="error">
-                          <DeleteIcon
-                            onClick={() => {
-                              deleteService(row?.id);
-                            }}
-                          />
-                        </IconButton>
+                          <IconButton color="error" size="small">
+                            <DeleteIcon
+                              onClick={() => {
+                                deleteService(row?.id);
+                              }}
+                            />
+                          </IconButton>
 
-                        <Snackbar
-                          open={snackOpen}
-                          autoHideDuration={3000}
-                          onClose={snackCloseClick}
-                          anchorOrigin={{
-                            vertical: "bottom",
-                            horizontal: "right",
-                          }}
-                        >
-                          <Alert
+                          <Snackbar
+                            open={snackOpen}
+                            autoHideDuration={3000}
                             onClose={snackCloseClick}
-                            severity={alertSeverity}
-                            variant="filled"
-                            sx={{ width: "100%" }}
+                            anchorOrigin={{
+                              vertical: "bottom",
+                              horizontal: "right",
+                            }}
                           >
-                            {alertMessage}
-                          </Alert>
-                        </Snackbar>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </InfiniteScroll>
-    </div>
+                            <Alert
+                              onClose={snackCloseClick}
+                              severity={alertSeverity}
+                              variant="filled"
+                              sx={{ width: "100%" }}
+                            >
+                              {alertMessage}
+                            </Alert>
+                          </Snackbar>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </InfiniteScroll>
+      </div>
+    </>
   );
 }

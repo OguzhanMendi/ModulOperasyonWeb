@@ -2,7 +2,7 @@ const initialState = {
   renew: false,
 };
 
-const uzakListReducer = (state = initialState, action) => {
+const contentPingReducer = (state = initialState, action) => {
   switch (action.type) {
     case "REFETCH_CONTENT":
       return {
@@ -14,4 +14,4 @@ const uzakListReducer = (state = initialState, action) => {
   }
 };
 
-export default uzakListReducer;
+export default contentPingReducer;

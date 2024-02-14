@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { useState } from "react";
 
 import { FcBusinessman } from "react-icons/fc";
@@ -23,21 +22,22 @@ export default function Mainpage({ toggleSidebar }) {
   };
 
   return (
-    <div className="w-full flex fixed h-screen  ">
+    <div className="w-full flex">
       <div
         className={`
-       
-        ${
-          isHovered
-            ? "w-60 bg-blue-800 duration-100  "
-            : "w-16 bg-blue-800	sduration-150  "
-        } flex-row  rounded-sm   `}
+      ${
+        isHovered
+          ? "w-60 bg-blue-800 duration-100"
+          : "w-16 bg-blue-800 duration-150"
+      }
+      flex-row rounded-sm h-screen fixed
+    `}
         onMouseEnter={toggleAc}
         onMouseLeave={toggleKapat}
       >
-        <ul className="flex flex-col gap-2 p-2 ">
+        <ul className="flex flex-col gap-2 p-2">
           <li
-            className="flex items-center gap-2 p-2 cursor-pointer  hover:bg-sky-400 rounded-xl"
+            className="flex items-center gap-2 p-2 cursor-pointer hover:bg-sky-400 rounded-xl"
             onClick={() => {
               seciliClick("UzakBaglanti");
             }}
@@ -66,10 +66,12 @@ export default function Mainpage({ toggleSidebar }) {
           </li>
         </ul>
       </div>
-
-      <div className="w-full mt-1 overflow-y-auto  ">
-        {/* overflow-y-auto */}
-        {secili === "UzakBaglanti" && <UzakBaglanti />}
+      <div className="flex-grow">
+        {secili === "UzakBaglanti" && (
+          <div className={`${isHovered ? "ml-60" : "ml-16"}`}>
+            <UzakBaglanti />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
 import { combineReducers } from "redux";
 import userReducer from "./userReducer";
-import uzakListReducer from "./uzakListReducer";
+import contentPingReducer from "./contentPingReducer";
 
 const rootReducer = combineReducers({
   user: userReducer,
-  contentPing: uzakListReducer,
+  contentPing: contentPingReducer,
 });
 
 export default rootReducer;
