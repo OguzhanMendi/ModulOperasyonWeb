@@ -1,6 +1,7 @@
 const initialState = {
   user: {
-    ad: "",
+    username: "",
+    fullname: "",
   },
 };
 
@@ -13,7 +14,8 @@ const userReducer = (state = initialState, action) => {
       return {
         ...state,
         user: {
-          ad: "",
+          username: "",
+          fullname: "",
         },
       };
 

@@ -18,18 +18,20 @@ import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useSelector, useDispatch } from "react-redux";
-import { list } from "postcss";
+import SendIcon from "@mui/icons-material/Send";
+import { getListItemAvatarUtilityClass } from "@mui/material";
 
 export default function UzakBaglanti() {
   const [data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPageCount, setTotalPageCount] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const contentPing = useSelector((state) => state.contentPing.renew);
-  const [filtre, setFiltre] = useState("");
-  const dispatch = useDispatch();
 
   const refElm = useRef(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [search, setSearch] = useState();
+
+  const contentPing = useSelector((state) => state.contentPing.renew);
+
   const [form, setForm] = useState([
     {
       sirketAd: "",
@@ -79,7 +81,9 @@ export default function UzakBaglanti() {
   const listService = async () => {
     try {
       const response = await axios.get(
-        `https://localhost:7031/Baglanti/List?page=${currentPage + 1}`,
+        `https://localhost:7031/Baglanti/List?page=${
+          currentPage + 1
+        }&search=${search}`,
         {
           headers: {
             authorization: `Bearer ${Cookie.get("token")}`,
@@ -89,41 +93,66 @@ export default function UzakBaglanti() {
       if (response.status === 200) {
         setData((prevData) => [...prevData, ...response?.data?.data]);
         setCurrentPage((prevPage) => prevPage + 1);
-        setHasMore(currentPage < totalPageCount);
+        setHasMore(currentPage + 1 < totalPageCount);
+        if (
+          response?.data?.data === null ||
+          response?.data?.data.length === 0
+        ) {
+          setHasMore(false);
+        }
       }
     } catch (err) {
       setHasMore(false);
     }
   };
-  const getList = async () => {
-    try {
-      const response = await axios.get(
-        `https://localhost:7031/Baglanti/List?page=${currentPage}`,
-        {
-          headers: {
-            Authorization: `Bearer ${Cookie.get("token")}`,
-          },
-        }
-      );
 
-      if (response.status === 200) {
-        setData(response?.data?.data);
-        setTotalPageCount(response?.data?.totalPages);
-        dispatch({
-          type: "REFETCH_CONTENT",
-          payload: false,
-        });
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  // useEffect(() => {
+  //   const getList = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //         `https://localhost:7031/Baglanti/List?page=${currentPage}&search=${search}`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${Cookie.get("token")}`,
+  //           },
+  //         }
+  //       );
+
+  //       if (response.status === 200) {
+  //         setData(response?.data?.data);
+  //         setTotalPageCount(response?.data?.totalPages);
+  //       }
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   };
+  //   getList();
+  // }, []);
+
   useEffect(() => {
-    getList();
-    if (contentPing) {
-      getList();
-    }
-  }, [contentPing]);
+    const getLists = async () => {
+      try {
+        const response = await axios.get(
+          `https://localhost:7031/Baglanti/List?page=${currentPage}&search=${search}`,
+          {
+            headers: {
+              Authorization: `Bearer ${Cookie.get("token")}`,
+            },
+          }
+        );
+
+        if (response.status === 200) {
+          setData(response?.data?.data);
+          setTotalPageCount(response?.data?.totalPages);
+          setHasMore(true);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    getLists();
+  }, [search]);
 
   const createService = async () => {
     try {
@@ -151,7 +180,7 @@ export default function UzakBaglanti() {
       if (response.status === 200) {
         dialogClose();
         setForm("");
-        await getList();
+        setData((prevData) => [response.data, ...prevData]);
       }
     } catch (err) {}
   };
@@ -164,20 +193,6 @@ export default function UzakBaglanti() {
     } else {
       return data;
     }
-  };
-
-  const handleFiltreChange = (e) => {
-    setFiltre(e.target.value);
-  };
-
-  const filtreleData = (veri, filtre) => {
-    return veri.filter((row) =>
-      Object.values(row).some(
-        (val) =>
-          typeof val === "string" &&
-          val.toLowerCase().includes(filtre.toLowerCase())
-      )
-    );
   };
 
   const [open, setOpen] = useState(false);
@@ -217,12 +232,10 @@ export default function UzakBaglanti() {
         }
       );
       if (response.status === 200) {
-        debugger;
-
+        setData((prevData) => prevData.filter((item) => item.id !== id));
+        listService();
         setAlertSeverity("success");
         setAlertMessage("Silme işlemi başarıyla gerçekleştirildi.");
-        setCurrentPage(1);
-        getList();
       } else {
         setAlertSeverity("error");
         setAlertMessage("Silme işlemi başarısız oldu.");
@@ -264,11 +277,14 @@ export default function UzakBaglanti() {
         }
       );
       if (response.status === 200) {
+        setData((prevData) =>
+          prevData.map((item) =>
+            item.id === id ? { ...item, ...updateform } : item
+          )
+        );
+        listService();
         setAlertSeverity("success");
         setAlertMessage("Başarıyla Güncellendi.");
-        setCurrentPage(1);
-        setTotalPageCount(1);
-        getList();
       } else {
         setAlertSeverity("error");
         setAlertMessage("Güncelleme işlemi başarısız oldu.");
@@ -277,9 +293,16 @@ export default function UzakBaglanti() {
     } catch (err) {}
   };
 
+  const handleClick = (e) => {
+    console.log("tıklandı");
+  };
+
+  useEffect(() => {
+    refElm.current.addEventListener("click", handleClick);
+  }, []);
   return (
     <>
-      <div ref={refElm} className="border-box w-full flex flex-col h-full">
+      <div ref={refElm} className="px-4">
         <InfiniteScroll
           dataLength={data?.length}
           next={() => {
@@ -532,85 +555,111 @@ export default function UzakBaglanti() {
                   </InputAdornment>
                 ),
               }}
-              value={filtre}
-              onChange={handleFiltreChange}
+              value={search}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSearch(value.trim() === "" ? undefined : value);
+                setCurrentPage(1);
+              }}
             />
           </div>
 
-          <div className="md:w-full overflow-x-auto">
+          <div className=" md:w-full overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-sky-600 text-white">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wider">
                     Şirket Ad
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wider">
                     Bağlantı Tipi
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wider">
                     Bağlantı ID
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wider">
                     Bağlantı Şifre
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wider">
                     Yetkili Ad
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wider">
                     Yetkili Tel
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold tracking-wider">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wider">
                     İşlemler
                   </th>
                 </tr>
               </thead>
 
               <tbody className="bg-white divide-y divide-gray-200">
-                {filtreleData(data, filtre).map((row) => {
+                {data.map((row) => {
                   return (
                     <tr key={row?.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-3 py-2 whitespace-nowrap  text-sm font-semibold">
                         {row?.sirketAd}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
                         {row?.baglantiAd}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
                         {uzakFormat(row?.baglantiId)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
                         {row?.baglantiSifre}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
                         {row?.yetkiliAd}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
                         {row?.yetkiliTel.replace(
                           /(\d{4})(\d{3})(\d{2})(\d{2})/,
                           "$1 $2 $3 $4"
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
                         <div className="flex items-center gap-2">
-                          <IconButton color="primary" size="small">
+                          {/* <IconButton color="primary" size="small">
                             <EditIcon
                               onClick={() => {
                                 getBaglantiByIdService(row?.id);
                               }}
                             />
-                          </IconButton>
+                          </IconButton> */}
+                          <Button
+                            variant="contained"
+                            size="small"
+                            endIcon={<SendIcon />}
+                            onClick={() => {
+                              getBaglantiByIdService(row?.id);
+                            }}
+                          >
+                            Güncelle
+                          </Button>
 
-                          <IconButton color="error" size="small">
+                          {/* <IconButton color="error" size="small">
                             <DeleteIcon
                               onClick={() => {
                                 deleteService(row?.id);
                               }}
                             />
-                          </IconButton>
+                          </IconButton> */}
+
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<DeleteIcon />}
+                            color="error"
+                            onClick={() => {
+                              deleteService(row?.id);
+                            }}
+                          >
+                            Sil
+                          </Button>
 
                           <Snackbar
                             open={snackOpen}
-                            autoHideDuration={3000}
+                            autoHideDuration={2000}
                             onClose={snackCloseClick}
                             anchorOrigin={{
                               vertical: "bottom",

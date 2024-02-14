@@ -36,16 +36,21 @@ export default function Headers({ toggleSidebar, user }) {
         <span className="font-bold animate-bounce">Operasyon Portalı</span>
       </div>
 
-      <Avatar
-        className="cursor-pointer    hover:bg-black "
-        aria-controls={open ? "basic-menu" : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? "true" : undefined}
-        sx={{ bgcolor: blue[500] }}
-        onClick={handleClick}
-      >
-        {user?.user?.ad[0]?.toUpperCase()}
-      </Avatar>
+      <div className="flex gap-3 items-center">
+        <span className="text-green-600 text-l font-bold">
+          {user?.user?.fullname}
+        </span>
+        <Avatar
+          className="cursor-pointer    hover:bg-black "
+          aria-controls={open ? "basic-menu" : undefined}
+          aria-haspopup="true"
+          aria-expanded={open ? "true" : undefined}
+          sx={{ bgcolor: blue[500] }}
+          onClick={handleClick}
+        >
+          {user?.user?.fullname[0]?.toUpperCase()}
+        </Avatar>
+      </div>
       <Menu
         id="basic-menu"
         anchorEl={anchorEl}

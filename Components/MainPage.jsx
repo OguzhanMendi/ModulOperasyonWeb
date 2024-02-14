@@ -1,13 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { FcBusinessman } from "react-icons/fc";
 import { FcSettings } from "react-icons/fc";
 import { FcDepartment } from "react-icons/fc";
 import UzakBaglanti from "./UzakBaglanti";
 
+import Button from "@mui/material/Button";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import IconButton from "@mui/material/IconButton";
+
 export default function Mainpage({ toggleSidebar }) {
   const [secili, setSecili] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const seciliClick = (a) => {
     setSecili(a);
@@ -19,6 +24,23 @@ export default function Mainpage({ toggleSidebar }) {
 
   const toggleKapat = () => {
     setIsHovered(false);
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset;
+      setIsScrolled(scrollTop > 100); // Sayfa yukarıda 100 pikselden fazla kaydırıldığında göster
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" }); // Sayfayı yukarı doğru pürüzsüz bir şekilde kaydır
   };
 
   return (
@@ -68,11 +90,28 @@ export default function Mainpage({ toggleSidebar }) {
       </div>
       <div className="flex-grow">
         {secili === "UzakBaglanti" && (
-          <div className={`${isHovered ? "ml-60" : "ml-16"}`}>
+          <div className={`${isHovered ? "ml-60" : "ml-16"} overflow-y-auto`}>
             <UzakBaglanti />
           </div>
         )}
       </div>
+      {isScrolled && (
+        <div className="fixed bottom-10 right-10">
+          <IconButton
+            color="success"
+            size="large"
+            sx={{
+              "&:hover": {
+                backgroundColor: "#778899",
+              },
+              backgroundColor: "#bfbfbf",
+            }}
+            onClick={scrollToTop}
+          >
+            <ArrowUpwardIcon />
+          </IconButton>
+        </div>
+      )}
     </div>
   );
 }

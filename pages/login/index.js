@@ -15,8 +15,8 @@ export default function index() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState([
     {
-      ad: "",
-      sifre: "",
+      username: "",
+      password: "",
     },
   ]);
   let [errorMessage, setErrorMessage] = useState("");
@@ -34,13 +34,13 @@ export default function index() {
     debugger;
 
     try {
-      if (!form.ad || !form.sifre) {
+      if (!form.username || !form.password) {
         setErrorMessage("Kullanıcı adı ve şifre alanları boş bırakılamaz.");
         return;
       }
       const reqBody = JSON.stringify({
-        ad: form.ad,
-        sifre: form.sifre,
+        username: form.username,
+        password: form.password,
       });
 
       const response = await axios.post(
@@ -55,11 +55,12 @@ export default function index() {
       );
 
       if (response.status === 200) {
-        const { ad } = response.data;
+        const { username, fullname } = response.data;
         dispatch({
           type: "LOGIN",
           payload: {
-            ad,
+            username,
+            fullname,
           },
         });
         Cookie.set("token", response.data.token, {
@@ -124,19 +125,20 @@ export default function index() {
                 id="outlined-basic"
                 label="Kullanıcı Adı"
                 variant="outlined"
-                value={form.ad}
+                value={form.username}
                 onChange={(event) => {
-                  setForm({ ...form, ad: event.target.value });
+                  setForm({ ...form, username: event.target.value });
                 }}
               />
+
               <TextField
                 id="outlined-basic"
                 label="Şifre"
                 variant="outlined"
                 type="password"
-                value={form.sifre}
+                value={form.password}
                 onChange={(event) => {
-                  setForm({ ...form, sifre: event.target.value });
+                  setForm({ ...form, password: event.target.value });
                 }}
               />
 
