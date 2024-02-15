@@ -22,6 +22,7 @@ import SendIcon from "@mui/icons-material/Send";
 import { getListItemAvatarUtilityClass } from "@mui/material";
 
 export default function UzakBaglanti() {
+  const user = useSelector((state) => state.user);
   const [data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPageCount, setTotalPageCount] = useState(1);
@@ -300,6 +301,86 @@ export default function UzakBaglanti() {
   useEffect(() => {
     refElm.current.addEventListener("click", handleClick);
   }, []);
+
+  const [detail, setDetail] = useState(false);
+  const deatilClose = () => {
+    setDetail(false);
+  };
+
+  const detailOpen = () => {
+    setDetail(true);
+  };
+
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  const handleRowClick = (row) => {
+    setSelectedRow(row);
+    setDetail(true);
+  };
+  const PopupContent = ({ row }) => {
+    const { sirketAd, baglantiAd, baglantiId, baglantiSifre } = row;
+
+    return (
+      <div className="flex gap-2">
+        <div className="w-1/2 flex flex-col gap-5 p-5 border border-gray-500 rounded-md">
+          <p>
+            <span className="font-semibold ">Şirket Adı:</span> {sirketAd}
+          </p>
+          <p>
+            <span className="font-semibold ">Bağlantı Tipi:</span> {baglantiAd}
+          </p>
+          <p>
+            <span className="font-semibold ">Bağlantı ID:</span> {baglantiId}
+          </p>
+          <p>
+            <span className="font-semibold ">Bağlantı Şifre:</span>{" "}
+            {baglantiSifre}
+          </p>
+        </div>
+        <div className="flex flex-col justify-center">
+          <p className="text-lg font-semibold mb-4">
+            Adınıza Uzak Bağlantı Kapatılacaktır Emin Misiniz?
+          </p>
+          <Button
+            variant="contained"
+            style={{ background: "#4caf50", color: "#fff" }}
+            onClick={() => {
+              baglananCreateService(sirketAd);
+            }}
+          >
+            Servis Oluştur
+          </Button>
+        </div>
+      </div>
+    );
+  };
+  const baglananCreateService = async (sirketAd) => {
+    try {
+      debugger;
+      const reqBody = JSON.stringify({
+        id: 0,
+        sirketAd: sirketAd,
+        fullname: user?.user?.fullname,
+        baglantiSayi: 0,
+      });
+
+      const response = await axios.post(
+        `https://localhost:7031/Baglanan/Create`,
+        reqBody,
+        {
+          headers: {
+            Accept: "*/*",
+            "Content-Type": "application/json",
+            authorization: `Bearer ${Cookie.get("token")}`,
+          },
+        }
+      );
+      if (response.status === 200) {
+        deatilClose();
+      }
+    } catch (err) {}
+  };
+
   return (
     <>
       <div ref={refElm} className="px-4">
@@ -539,6 +620,13 @@ export default function UzakBaglanti() {
               </DialogActions>
             </Dialog>
 
+            <Dialog open={detail} onClose={deatilClose} fullWidth>
+              <DialogContent style={{ background: "#f0f0f0" }}>
+                <PopupContent row={selectedRow} />
+              </DialogContent>
+              <DialogActions style={{ background: "#f0f0f0" }}></DialogActions>
+            </Dialog>
+
             <TextField
               id="outlined-basic"
               size="small"
@@ -596,22 +684,41 @@ export default function UzakBaglanti() {
                 {data.map((row) => {
                   return (
                     <tr key={row?.id}>
-                      <td className="px-3 py-2 whitespace-nowrap  text-sm font-semibold">
+                      <td
+                        key={row?.id}
+                        onClick={() => handleRowClick(row)}
+                        className="px-3 py-2 whitespace-nowrap  text-sm font-semibold"
+                      >
                         {row?.sirketAd}
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
+                      <td
+                        key={row?.id}
+                        className="px-3 py-2 whitespace-nowrap text-sm font-semibold"
+                      >
                         {row?.baglantiAd}
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
+                      <td
+                        key={row?.id}
+                        className="px-3 py-2 whitespace-nowrap text-sm font-semibold"
+                      >
                         {uzakFormat(row?.baglantiId)}
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
+                      <td
+                        key={row?.id}
+                        className="px-3 py-2 whitespace-nowrap text-sm font-semibold"
+                      >
                         {row?.baglantiSifre}
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
+                      <td
+                        key={row?.id}
+                        className="px-3 py-2 whitespace-nowrap text-sm font-semibold"
+                      >
                         {row?.yetkiliAd}
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm font-semibold">
+                      <td
+                        key={row?.id}
+                        className="px-3 py-2 whitespace-nowrap text-sm font-semibold"
+                      >
                         {row?.yetkiliTel.replace(
                           /(\d{4})(\d{3})(\d{2})(\d{2})/,
                           "$1 $2 $3 $4"

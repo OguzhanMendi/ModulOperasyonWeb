@@ -88,6 +88,7 @@ export default function Mainpage({ toggleSidebar }) {
           </li>
         </ul>
       </div>
+
       <div className="flex-grow">
         {secili === "UzakBaglanti" && (
           <div className={`${isHovered ? "ml-60" : "ml-16"} overflow-y-auto`}>
